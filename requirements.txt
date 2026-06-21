@@ -1,0 +1,27 @@
+# Core
+numpy>=1.26
+pandas>=2.1
+scikit-learn>=1.4
+scipy>=1.11
+pyyaml>=6.0
+tqdm>=4.66
+
+# NLP / preprocessing
+beautifulsoup4>=4.12
+nltk>=3.8
+
+# Explainability
+shap>=0.45
+lime>=0.2.0.1
+
+# Visualization
+matplotlib>=3.8
+seaborn>=0.13
+
+# Transformers (GPU recommended; run on Colab/Kaggle)
+torch>=2.2
+transformers>=4.40
+datasets>=2.19
+
+# Statistics
+statsmodels>=0.14

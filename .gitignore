@@ -1,0 +1,20 @@
+# Data (never commit raw corpora)
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# Models / artifacts
+*.pt
+*.bin
+*.onnx
+results/figures/*
+results/tables/*
+!results/**/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.env

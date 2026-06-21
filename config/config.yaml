@@ -1,0 +1,33 @@
+seed: 42
+
+data:
+  sources: [ceas, nazario, nigerian_fraud, spamassassin, enron, ling]
+  raw_dir: data/raw
+  processed_dir: data/processed
+  text_fields: [subject, body]
+  label_field: label          # 1 = phishing, 0 = legitimate
+  group_field: sender_domain  # used for leakage-controlled split
+
+preprocess:
+  lowercase: true
+  strip_html: true
+  url_token: urltoken
+  email_token: emailtoken
+
+tfidf:
+  ngram_range: [1, 2]
+  max_features: 20000
+  sublinear_tf: true
+  min_df: 2
+
+split:
+  test_size: 0.20
+  cv_folds: 3
+  strategy: group_shuffle   # GroupShuffleSplit by sender_domain
+
+classical_models: [logistic_regression, naive_bayes, decision_tree, random_forest, linear_svm]
+transformer_models: [bert-base-uncased, distilbert-base-uncased, roberta-base]
+
+robustness:
+  attacks: [char_substitution, keyword_injection, html_obfuscation]
+  levels: [0.05, 0.10, 0.15]
