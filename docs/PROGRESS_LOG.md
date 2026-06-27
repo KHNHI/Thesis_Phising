@@ -1,7 +1,17 @@
 # PROGRESS & CONTEXT LOG
 
 > File theo dõi context + công việc đã làm qua từng tuần. Đọc file này đầu mỗi phiên để nắm nhanh.
-> Cập nhật lần cuối: cuối Tuần 2 (đã có corpus đa nguồn thật).
+> Cập nhật lần cuối: Tuần 6 (adversarial robustness thật; transformer-robustness chờ GPU).
+
+## 0. BẢN ĐỒ FILE (đọc để tiếp tục ở phiên/chế độ mới)
+- **Đề cương đầy đủ:** `docs/DeCuong_KhoaLuan.md` (5 chương + kế hoạch tuần).
+- **Mẫu báo cáo tuần GVHD:** `docs/REPORT_TEMPLATE.md` (cấu trúc chính xác để tái tạo).
+- **Báo cáo .docx đã nộp:** `reports/` (đề cương + Tuần 1/2/3) — dùng làm mẫu định dạng.
+- **Code generate báo cáo:** `build_baocao_tuan3.js` (copy để làm báo cáo tuần sau).
+- **Kết quả thật:** `results/tables/*.json` (metrics 5 ML), `results/figures/*.png` (12 hình).
+- **Tài liệu chương:** `docs/{source_descriptions,data_quality,corpus_statistics,week3_results,research_questions,dataset_survey}.md`.
+- **Tái tạo data/model:** `python src/data/build_corpus.py` → `python src/models/run_classical.py`.
+- → Tóm lại: **chỉ cần đưa nguyên repo này** là phiên mới có đủ đề cương, mẫu báo cáo, code và kết quả.
 
 ---
 
@@ -84,12 +94,43 @@
 **Deliverables:** `docs/{source_descriptions,data_quality,week3_results}.md`, 12 figure trong `results/figures/`, `models/*.joblib`, `results/tables/*.json`, `BaoCao_KhoaLuan_Tuan3.docx`.
 **Data-quality thật:** removal 0.006% · missing sender/date/urls ~40% (do Enron+Ling) · imbalance 1.083 · email legit dài hơn phishing (357 vs 195 từ) · 19,386 domain.
 
-### Tuần 4–5 — ⏳ KẾ HOẠCH
+### Tuần 4 — ✅ HOÀN THÀNH phần chạy được tại đây (90%; transformer chờ GPU) + xử lý feedback Tuần 3
+**Feedback Tuần 3 đã xử lý (số THẬT):**
+- Phân tích NGUYÊN NHÂN: SVM>LR (McNemar p=3.9e-06, biên lớn hơn) · RF/DT thấp (cây kém trên TF-IDF thưa 20k) · NB precision cao/recall thấp (lỗi dồn ở Nazario 21.6%).
+- McNemar vs SVM: tất cả p<0.001 (LR 3.9e-6 · RF 4.6e-9 · NB 1.9e-30 · DT 1.1e-51) → SVM vượt trội có ý nghĩa.
+- Bootstrap CI 95% F1: SVM [.9806–.9845] · LR [.9769–.9814] · RF [.9740–.9787] · NB [.9603–.9660] · DT [.9524–.9589].
+- Error analysis SVM: FP=227 (3.43%) · FN=62 (0.76%); nguồn khó nhất SpamAssassin 4.52%, Nazario 3.79%.
+- Pipeline timing+retention: 4 bước, retention 99.99% (`pipeline_timing.json`).
+- Calibration curves (5 model) + calibrated SVM đã train.
+**XAI (phần thầy nói "quyết định"):**
+- SHAP toàn cục SVM: bias DỊCH từ CEAS→Enron (enron/vince/wrote/pm) + vài dấu hiệu thật (click/http).
+- LIME cục bộ (35 phishing): nêu dấu hiệu thật (click/account/alert/lose).
+- Nhất quán SHAP–LIME: Jaccard 8.1% · Pearson 0.787 · Spearman 0.5 → bổ sung nhau.
+**Deliverables:** `docs/week4_analysis.md`, figures (shap_summary, shap_vs_lime, calibration_curves, roc/pr_curves), `results/tables/{error_analysis,shap_top20,lime_analysis,shap_lime_consistency,pipeline_timing}.json`, `BaoCao_KhoaLuan_Tuan4.docx`.
+**CHỜ SV:** chạy `src/models/train_transformer.py` trên **Colab/Kaggle (GPU)** → gửi `transformer_metrics.json` về để viết so sánh ML vs transformer.
+
+### Tuần 5 — ✅ Transformer ĐÃ CHẠY (GPU, kết quả thật) + so sánh toàn diện
+**Kết quả transformer (test 14,824):** RoBERTa F1=0.9948 (FP=28) · BERT 0.9914 (FP=110) · DistilBERT 0.9895 (FP=135).
+**So sánh RQ1:** cả 3 transformer > SVM tốt nhất (0.9826). RoBERTa +0.0122 F1, giảm FP 227→28 (precision .9729→.9966) — thắng lợi lớn nhất là giảm false alarm ~8x.
+**Lý do:** TF-IDF bỏ qua ngữ cảnh/thứ tự (dựa artifact); transformer mô hình ngữ nghĩa theo ngữ cảnh.
+**Deliverables:** `results/tables/{transformer_metrics,all_models_comparison}.json`, figures (all_models_comparison, f1_ranking, transformer_confusion_matrices), `docs/classical_vs_transformer.md`.
+**CHỜ SV (tùy chọn):** chạy `train_transformer_preds.py` (lưu dự đoán từng email) → gửi `transformer_predictions.json` để làm McNemar + bootstrap CI cho transformer.
+
+### Tuần 6 — ✅ Adversarial Robustness (số THẬT, chạy tại đây)
+**Threat model:** sửa email phishing để né phát hiện; đo recall phishing sau tấn công.
+**3 tấn công × 5 model × mức 5/10/15%:**
+- **Keyword injection = lỗ hổng nghiêm trọng:** SVM recall 0.992→0.201 (15%); mọi model TF-IDF sụp mạnh. NB bền nhất (0.724). → đúng cảnh báo của paper + mặt trái của bias (RQ3).
+- Char substitution & HTML obfuscation: model tuyến tính BỀN (~0.99); chỉ cây giảm nhẹ.
+**Kết luận RQ4 (phía cổ điển):** TF-IDF bền với che giấu bề mặt nhưng RẤT yếu trước "pha loãng ngữ nghĩa".
+**Deliverables:** `docs/adversarial_robustness.md`, `results/tables/adversarial.json`, figures (adversarial_robustness, adversarial_drop_15), `src/robustness/run_adversarial.py`.
+**CHỜ SV (tùy chọn, hoàn tất RQ4):** chạy `train_transformer_robustness.py` (Colab/GPU) → gửi `transformer_robustness.json` để so sánh độ bền transformer vs TF-IDF (giả thuyết: transformer bền hơn với injection).
+
+### Tuần 6–7 — ⏳ KẾ HOẠCH
 
 ---
 
 ## 9. NEXT ACTION
-- Tuần 4–5: fine-tune transformer (BERT/DistilBERT/RoBERTa) — **cần GPU ngoài (Colab/Kaggle)**; tôi sẽ đưa script, SV chạy rồi paste output.
-- Bổ sung bootstrap CI 95% + McNemar cho 5 ML hiện tại (chạy được tại đây).
-- Tuần 6–7: SHAP/LIME + bias audit + đối kháng (chạy được tại đây trên model đã lưu).
-- Khi viết chương kết quả: dùng số THẬT trong `results/tables/*.json`.
+- **SV chạy GPU:** `python src/models/train_transformer.py` trên Colab/Kaggle → gửi `transformer_metrics.json`.
+- Sau đó: viết so sánh ML vs transformer + McNemar; rồi sang **đối kháng (adversarial robustness)** — chạy được tại đây bằng `robustness/adversarial.py` trên model đã lưu.
+- Mở rộng SHAP/LIME (full summary + nhiều case study) cho Chương 4.
+- Khi viết: chỉ dùng số THẬT trong `results/tables/*.json`.
